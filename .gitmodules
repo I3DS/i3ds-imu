@@ -1,0 +1,3 @@
+[submodule "asn/i3ds-dmu30-asn"]
+	path = asn/i3ds-dmu30-asn
+	url = ssh://git@git.code.sintef.no/i3ds/i3ds-dmu30-asn.git
