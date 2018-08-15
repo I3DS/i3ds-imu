@@ -10,6 +10,7 @@
 
 #include "imu_dmu30.hpp"
 #include <cstdint>
+#include <cstddef>
 #include <byteswap.h>
 
 #include <fcntl.h>      // File control definitions
@@ -50,12 +51,16 @@ struct dmu30_frame {
 };
 
 
-i3ds::ImuDmu30 *latest_imu;
+i3ds::ImuDmu30 *latest_imu = nullptr;
 
 extern "C" {
   extern void i3ds_handle_imu_message(Message_Type data);
   void i3ds_send_imu_message(IMUMeasurement20 message) {
-    BOOST_LOG_TRIVIAL(info) << "Got message from ADA!";
+    BOOST_LOG_TRIVIAL(trace) << "Got message from ADA!";
+    if (latest_imu == nullptr){
+      BOOST_LOG_TRIVIAL(error) << "Publisher is null. Not transmitting";
+      return;
+    }
     latest_imu->publish_message(message);
   }
 }
