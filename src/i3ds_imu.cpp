@@ -91,9 +91,6 @@ int main(int argc, char** argv)
   i3ds::Server server(context);
 
   imu = i3ds::ImuDmu30::Create(context, node_id, device);
-  imu->do_activate();
-  imu->do_start();
-
   imu->Attach(server);
 
   running = true;
