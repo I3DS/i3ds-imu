@@ -54,7 +54,7 @@ struct dmu30_frame {
 i3ds::ImuDmu30 *latest_imu = nullptr;
 
 extern "C" {
-  extern void i3ds_handle_imu_message(Message_Type data);
+  void i3ds_handle_imu_message(Message_Type data);
   void i3ds_send_imu_message(IMUMeasurement20 message) {
     BOOST_LOG_TRIVIAL(trace) << "Got message from ADA!";
     if (latest_imu == nullptr){
@@ -107,6 +107,7 @@ bool ensure_read(int device, void *buf, size_t n_bytes) {
   return true;
 }
 
+// TODO(sigurdal) Check endianness of system and redefine this?
 #define swap_bytes_16(X) __bswap_16(X)
 #define swap_bytes_32(X) __bswap_32(X)
 

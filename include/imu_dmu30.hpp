@@ -51,8 +51,9 @@ namespace i3ds
       publisher_.Send<MeasurementTopic>(message);
     }
 
-  //  protected:
-    
+
+protected:
+
     // Actions.
     virtual void do_activate();
     virtual void do_start();
