@@ -35,7 +35,7 @@
 namespace po = boost::program_options;
 namespace logging = boost::log;
 
-volatile bool running;
+std::atomic<bool> running(false);
 
 i3ds::ImuDmu30::Ptr imu;
 
