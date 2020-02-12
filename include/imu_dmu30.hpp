@@ -25,18 +25,18 @@ namespace i3ds
   public:
     typedef std::shared_ptr<ImuDmu30> Ptr;
 
-    static Ptr Create(i3ds::Context::Ptr context, NodeID id, std::string device)
+    static Ptr Create(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string device)
     {
       return std::make_shared<ImuDmu30>(context, id, device);
     }
 
-    ImuDmu30(i3ds::Context::Ptr context, NodeID id, std::string device);
+    ImuDmu30(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string device);
     ~ImuDmu30(){
       stop();
     }
 
     // Supported period.
-    virtual bool is_sampling_supported(SampleCommand sample);
+    virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
 
     bool read_data(const std::shared_ptr<Message_Type> data);
     void run();
@@ -47,7 +47,7 @@ namespace i3ds
       }
     }
 
-    void publish_message(IMUMeasurement20 &message) {
+    void publish_message(i3ds_asn1::IMUMeasurement20 &message) {
       publisher_.Send<MeasurementTopic>(message);
     }
 
@@ -77,7 +77,7 @@ private:
     volatile bool running_;
 
     // Number of batches inserted.
-    BatchCount batches_;
+    i3ds_asn1::BatchCount batches_;
 
     std::string device_;
     int com_;

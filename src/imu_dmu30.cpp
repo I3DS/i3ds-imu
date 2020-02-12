@@ -65,7 +65,7 @@ extern "C" {
   }
 }
 
-i3ds::ImuDmu30::ImuDmu30(Context::Ptr context, NodeID id, std::string device)
+i3ds::ImuDmu30::ImuDmu30(Context::Ptr context, i3ds_asn1::NodeID id, std::string device)
   : IMU(id),
     publisher_(context, id),
     device_(device)
@@ -189,7 +189,7 @@ bool i3ds::ImuDmu30::read_data(const std::shared_ptr<Message_Type> data) {
 }
 
 
-bool i3ds::ImuDmu30::is_sampling_supported(SampleCommand sample) {
+bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand) {
   // TODO(sigurdal) implement?
   return true;
 }
@@ -199,7 +199,7 @@ void i3ds::ImuDmu30::open_device() {
   if ( com_ < 0 )
   {
     BOOST_LOG_TRIVIAL(error) << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno);
-    throw i3ds::CommandError(error_value, "Could not open device.");
+    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not open device.");
   }
 
   struct termios tty;
@@ -207,7 +207,7 @@ void i3ds::ImuDmu30::open_device() {
   if ( tcgetattr ( com_, &tty ) != 0 )
   {
     BOOST_LOG_TRIVIAL(error) <<  "Error " << errno << " from tcgetattr: " << strerror(errno);
-    throw i3ds::CommandError(error_value, "Could not open tty.");
+    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not open tty.");
   }
   
   cfsetospeed(&tty, B460800);
@@ -227,7 +227,7 @@ void i3ds::ImuDmu30::open_device() {
   tcflush(com_, TCIFLUSH);
   if ( tcsetattr ( com_, TCSANOW, &tty ) != 0) {
     BOOST_LOG_TRIVIAL(error) << "Error " << errno << " from tcsetattr";
-    throw i3ds::CommandError(error_value, "Could not set tty parameters.");
+    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not set tty parameters.");
   }
 }
 
