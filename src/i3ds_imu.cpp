@@ -15,6 +15,7 @@
 #include <vector>
 #include <memory>
 
+#include <i3ds/configurator.hpp>
 #include <boost/program_options.hpp>
 
 #include "i3ds/communication.hpp"
@@ -49,48 +50,28 @@ void signal_handler(int)
 
 int main(int argc, char** argv)
 {
-  unsigned int node_id;
   std::string device;
-
+  std::string debug_file;
+  i3ds::SensorConfigurator configurator;
   po::options_description desc("Allowed camera control options");
-
+  configurator.add_common_options(desc);
   desc.add_options()
-  ("help,h", "Produce this message")
-  ("node,n", po::value<unsigned int>(&node_id)->default_value(10), "Node ID of IMU")
-  ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
-  ("verbose,v", "Print verbose output")
-  ("quite,q", "Quiet ouput")
-  ("print", "Print the camera configuration")
-  ;
+      ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
+      ("debug_file,D", po::value(&debug_file), "Debug file to use instead of COM-device")
+      ;
+  po::variables_map vm = configurator.parse_common_options(desc, argc, argv);
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-
-  if (vm.count("help"))
-    {
-      std::cout << desc << std::endl;
-      return -1;
-    }
-
-  if (vm.count("quiet"))
-    {
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::warning);
-    }
-  else if (!vm.count("verbose"))
-    {
-      logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
-    }
-
-  po::notify(vm);
-
-  BOOST_LOG_TRIVIAL(info) << "Node ID:     " << node_id;
+  BOOST_LOG_TRIVIAL(info) << "Node ID:     " << configurator.node_id;
   BOOST_LOG_TRIVIAL(info) << "Device: " << device;
+  BOOST_LOG_TRIVIAL(info) << "Debug file: " << debug_file;
+
 
   i3ds::Context::Ptr context = i3ds::Context::Create();
 
   i3ds::Server server(context);
 
-  imu = i3ds::ImuDmu30::Create(context, node_id, device);
+  imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
+
   imu->Attach(server);
 
   running = true;
