@@ -15,6 +15,7 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/scripts)
 
 option(BUILD_EMBEDDED "Build for embedded systems" OFF)
 option(GENERATE_ASN "Generate new source files from ASN.1 definitions" ON)
+option(I3DS_ALT_PATH  "Alternative location for I3DS libraries (framework, asn1)" OFF)
 
 if (BUILD_EMBEDDED)
   if(NOT DEFINED CMAKE_FIND_ROOT_PATH)
@@ -64,25 +65,45 @@ else (GENERATE_ASN)
 
 endif (GENERATE_ASN)
 
+if (I3DS_ALT_PATH)
+  add_library(i3ds         SHARED IMPORTED)
+  add_library(i3ds_clients SHARED IMPORTED)
+  add_library(i3ds_asn1    SHARED IMPORTED)
+
+  set_target_properties( i3ds_asn1    PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/${I3DS_ALT_PATH}/lib/libi3ds_asn1.so)
+  set_target_properties( i3ds_clients PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/${I3DS_ALT_PATH}/lib/libi3ds_clients.so)
+  set_target_properties( i3ds         PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/${I3DS_ALT_PATH}/lib/libi3ds.so)
+
+  include_directories(BEFORE "${I3DS_ALT_PATH}/include")
+endif (I3DS_ALT_PATH)
+
+# For the generated ASN.1 defs for the IMU itself
+include_directories (BEFORE "generated/")
+file(GLOB ASN1_SRCS generated/i3ds/*.c)
+#file(GLOB ASN1_HDRS generated/i3ds/*.h)
+
 ################################################################################
 # Add sources and targets
 ################################################################################
+set (TARGET i3ds_imu)
+
 set(SRCS
-  ${ASN1_SRCS} ${ASN1_HDRS}
+  ${ASN1_SRCS}
   src/imu_dmu30.cpp)
 
 set (LIBS
   zmq
   pthread
   i3ds
+  i3ds_clients
+  i3ds_asn1
   ${Boost_LIBRARIES}
   )
 
+add_executable (${TARGET} src/i3ds_imu.cpp ${SRCS})
 
-add_executable (i3ds_imu src/i3ds_imu.cpp ${SRCS})
-target_link_libraries (i3ds_imu ${LIBS})
-#TODO: link with ada library instead of dummy
-target_link_libraries(i3ds_imu ${PROJECT_SOURCE_DIR}/dummy_imu.ar)
-target_compile_features(i3ds_imu PRIVATE cxx_range_for)
-install(TARGETS i3ds_imu DESTINATION bin)
+target_link_libraries (${TARGET} ${LIBS})
+target_compile_features(${TARGET} PRIVATE cxx_range_for)
+target_compile_features(${TARGET} PRIVATE cxx_constexpr)
 
+install(TARGETS ${TARGET} DESTINATION bin)
