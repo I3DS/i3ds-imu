@@ -78,10 +78,10 @@ i3ds::ImuDmu30::run()
 {
   auto data = std::make_shared<Message_Type>();
   while(running_) {
-    if (!read_data(data)) {
+    if (!read(data)) {
       BOOST_LOG_TRIVIAL(warning) << "Could not read frame.";
     }
-    BOOST_LOG_TRIVIAL(trace) << "Got message!"; 
+    BOOST_LOG_TRIVIAL(trace) << "Got message!";
   }
 }
 
@@ -111,7 +111,10 @@ bool ensure_read(int device, void *buf, size_t n_bytes) {
 #define swap_bytes_16(X) __bswap_16(X)
 #define swap_bytes_32(X) __bswap_32(X)
 
-bool i3ds::ImuDmu30::read_data(const std::shared_ptr<Message_Type> data) {
+bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data) {
+    // FIXME: this blocks on incoming data.  Either blocks on device, or
+    // blocks on semaphore/conditional (debug-file) to get new data
+
   dmu30_frame frame;
   uint8_t *buf = (uint8_t *)&frame;
   unsigned int skipped = 0;

@@ -38,7 +38,7 @@ namespace i3ds
     // Supported period.
     virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
 
-    bool read_data(const std::shared_ptr<Message_Type> data);
+    bool read(const std::shared_ptr<Message_Type> data);
     void run();
     void stop() {
       running_ = false;
