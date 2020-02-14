@@ -50,41 +50,53 @@ void signal_handler(int)
 
 int main(int argc, char** argv)
 {
-  std::string device;
-  std::string debug_file;
-  i3ds::SensorConfigurator configurator;
-  po::options_description desc("Allowed camera control options");
-  configurator.add_common_options(desc);
-  desc.add_options()
-      ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
-      ("debug_file,D", po::value(&debug_file), "Debug file to use instead of COM-device")
-      ;
-  po::variables_map vm = configurator.parse_common_options(desc, argc, argv);
+    std::string device;
+    std::string debug_file;
+    int debug_run = 0;
 
-  BOOST_LOG_TRIVIAL(info) << "Node ID:     " << configurator.node_id;
-  BOOST_LOG_TRIVIAL(info) << "Device: " << device;
-  BOOST_LOG_TRIVIAL(info) << "Debug file: " << debug_file;
+    i3ds::SensorConfigurator configurator;
+    po::options_description desc("Allowed camera control options");
+    configurator.add_common_options(desc);
+    desc.add_options()
+        ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
+        ("debug_file,D", po::value(&debug_file), "Debug file to use instead of COM-device")
+        ("debug_run", po::value(&debug_run), "Do a debug run (i.e. run for a short while")
+        ;
+    po::variables_map vm = configurator.parse_common_options(desc, argc, argv);
 
+    BOOST_LOG_TRIVIAL(info) << "Node ID:     " << configurator.node_id;
+    BOOST_LOG_TRIVIAL(info) << "Device: " << device;
 
-  i3ds::Context::Ptr context = i3ds::Context::Create();
+    i3ds::Context::Ptr context = i3ds::Context::Create();
+    i3ds::Server server(context);
 
-  i3ds::Server server(context);
+    if (debug_file.length() > 0) {
+        BOOST_LOG_TRIVIAL(info) << "Debug file: " << debug_file;
+        imu = i3ds::ImuDmu30_Debug::Create(context, configurator.node_id, debug_file);
+    } else {
+        imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
+    }
 
-  imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
+    imu->Attach(server);
 
-  imu->Attach(server);
+    running = true;
+    signal(SIGINT, signal_handler);
 
-  running = true;
-  signal(SIGINT, signal_handler);
+    server.Start();
 
-  server.Start();
+    // FIXME: Drop debug-stuff
+    if (debug_run > 0) {
+        BOOST_LOG_TRIVIAL(debug) << __func__ << "() Setup done, closing down momentarily";
+        imu->debug();
+        sleep(debug_run);
+    } else {
+        while (running) {
+            sleep(1);
+        }
+    }
+    server.Stop();
 
-  while (running)
-  {
-    sleep(1);
-  }
+    BOOST_LOG_TRIVIAL(debug)<< __func__ << "() done";
 
-  server.Stop();
-
-  return 0;
+    return 0;
 }

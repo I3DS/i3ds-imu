@@ -19,8 +19,33 @@
 
 namespace i3ds
 {
-  class ImuDmu30 : public IMU
-  {
+// 0x55AA is reversed due to endianness
+#define SYNC_BYTE 0xAA55
+struct dmu30_frame {
+    uint16_t sync_bytes;
+    uint16_t message_count;
+    float axis_x_rate;
+    float axis_x_acceleration;
+    float axis_y_rate;
+    float axis_y_acceleration;
+    float axis_z_rate;
+    float axis_z_acceleration;
+    float aux_input_voltage;
+    float average_temperature;
+    float axis_x_delta_theta;
+    float axis_x_vel;
+    float axis_y_delta_theta;
+    float axis_y_vel;
+    float axis_z_delta_theta;
+    float axis_z_vel;
+    uint16_t startup_flags;
+    uint16_t operation_flags;
+    uint16_t error_flags;
+    uint16_t checksum;
+};
+
+class ImuDmu30 : public IMU
+{
 
   public:
     typedef std::shared_ptr<ImuDmu30> Ptr;
@@ -51,6 +76,7 @@ namespace i3ds
       publisher_.Send<MeasurementTopic>(message);
     }
 
+    virtual void debug();
 
 protected:
 
@@ -60,9 +86,11 @@ protected:
     virtual void do_stop();
     virtual void do_deactivate();
 
-private:
-
-    void open_device();
+    // IMU specific operations
+    virtual int open_device();
+    virtual void close_device(int device);
+    virtual bool read_single_frame(struct dmu30_frame *);
+    void send(std::shared_ptr<Message_Type> data);
 
     // Called periodically to accumulated and send samples.
     bool send_sample(unsigned long timestamp_us);
@@ -70,19 +98,42 @@ private:
     // Generat a single ADC reading with specified resolution.
     std::vector<float> read_imu();
 
-    Publisher publisher_;
-
-    // MeasurementTopic::Data frame_;
-
-    volatile bool running_;
-
-    // Number of batches inserted.
-    i3ds_asn1::BatchCount batches_;
 
     std::string device_;
     int com_;
 
+private:
+    Publisher publisher_;
+
+    // MeasurementTopic::Data frame_;
+
+      std::atomic<bool> running_;
+
+    // Number of batches inserted.
+    i3ds_asn1::BatchCount batches_;
+    i3ds_asn1::IMUMeasurement20 msg_;
+    i3ds_asn1::BatchCount msg_idx_;
+
     std::thread worker_;
+};
+
+class ImuDmu30_Debug : public ImuDmu30
+{
+    public:
+        static Ptr Create(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string debug_file)
+        {
+            return std::make_shared<ImuDmu30_Debug>(context, id, debug_file);
+        }
+
+        ImuDmu30_Debug(i3ds::Context::Ptr context,
+                       i3ds_asn1::NodeID id,
+                       std::string device) :
+            i3ds::ImuDmu30(context, id, device)
+    {};
+
+    virtual int open_device();
+    virtual bool read_single_frame(struct dmu30_frame *);
+    virtual void debug();
 };
 
 } // namespace i3ds

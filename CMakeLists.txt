@@ -89,6 +89,7 @@ set (TARGET i3ds_imu)
 
 set(SRCS
   ${ASN1_SRCS}
+  src/imu_dmu30_debug.cpp
   src/imu_dmu30.cpp)
 
 set (LIBS
