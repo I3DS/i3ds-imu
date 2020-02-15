@@ -1,5 +1,6 @@
 #ifndef IMU_HELPER_HPP
 #define IMU_HELPER_HPP
+
 #include <stdint.h>
 #include <endian.h>
 #include <iostream>
@@ -39,7 +40,7 @@ struct dmu30_frame {
     uint16_t checksum;
 };
 
-uint16_t gen_checksum(struct dmu30_frame *fr)
+static inline uint16_t gen_checksum(struct dmu30_frame *fr)
 {
     uint16_t *t = (uint16_t *)fr;
     uint16_t inv_checksum = 0;
@@ -49,7 +50,7 @@ uint16_t gen_checksum(struct dmu30_frame *fr)
     return htobe16(((~inv_checksum) + 1) & 0xffff);
 }
 
-bool verify_checksum(struct dmu30_frame *frame)
+static inline bool verify_checksum(struct dmu30_frame *frame)
 {
   uint16_t *u16buf = (uint16_t *)frame;
   size_t n_shorts = sizeof(*frame)/2;
