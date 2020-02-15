@@ -17,32 +17,9 @@
 #include <i3ds/imu_sensor.hpp>
 #include "i3ds/DMU30.h"
 
+#include "imu_helper.hpp"
 namespace i3ds
 {
-// 0x55AA is reversed due to endianness
-#define SYNC_BYTE 0xAA55
-struct dmu30_frame {
-    uint16_t sync_bytes;
-    uint16_t message_count;
-    float axis_x_rate;
-    float axis_x_acceleration;
-    float axis_y_rate;
-    float axis_y_acceleration;
-    float axis_z_rate;
-    float axis_z_acceleration;
-    float aux_input_voltage;
-    float average_temperature;
-    float axis_x_delta_theta;
-    float axis_x_vel;
-    float axis_y_delta_theta;
-    float axis_y_vel;
-    float axis_z_delta_theta;
-    float axis_z_vel;
-    uint16_t startup_flags;
-    uint16_t operation_flags;
-    uint16_t error_flags;
-    uint16_t checksum;
-};
 
 class ImuDmu30 : public IMU
 {

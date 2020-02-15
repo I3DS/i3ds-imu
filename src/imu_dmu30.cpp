@@ -129,9 +129,6 @@ bool ensure_read(int device, void *buf, size_t n_bytes) {
   return true;
 }
 
-// TODO(sigurdal) Check endianness of system and redefine this?
-#define swap_bytes_16(X) __bswap_16(X)
-#define swap_bytes_32(X) __bswap_32(X)
 void i3ds::ImuDmu30::debug()
 {
     BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
