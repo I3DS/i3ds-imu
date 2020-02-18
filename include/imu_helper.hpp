@@ -20,7 +20,8 @@ union wrapper {
     uint32_t raw;
 };
 static inline float float_be(volatile float t) {
-    union wrapper w = { .f = t };
+    union wrapper w;
+    w.f = t;
     w.raw = htobe32(w.raw);
     return w.f;
 }
