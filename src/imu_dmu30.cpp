@@ -57,7 +57,7 @@ i3ds::ImuDmu30::ImuDmu30(Context::Ptr context, i3ds_asn1::NodeID id, std::string
   : IMU(id),
     device_(device),
     publisher_(context, id),
-    batches_(20),
+    batches_(1),
     msg_idx_(0)
 {
   latest_imu = this;
