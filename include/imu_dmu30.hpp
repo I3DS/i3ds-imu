@@ -53,6 +53,10 @@ class ImuDmu30 : public IMU
       publisher_.Send<MeasurementTopic>(message);
     }
 
+    void set_name(std::string name) {
+        set_device_name(name);
+    }
+
     virtual void debug();
 
 protected:

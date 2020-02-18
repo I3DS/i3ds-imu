@@ -47,10 +47,12 @@ void signal_handler(int)
 }
 
 #define DEFAULT_DEVICE "/dev/ttyUSB0"
+#define DEFAULT_NAME "IMU DMU30"
 
 int main(int argc, char** argv)
 {
     std::string device;
+    std::string name;
     std::string debug_file;
     int debug_run = 0;
 
@@ -58,6 +60,7 @@ int main(int argc, char** argv)
     po::options_description desc("Allowed camera control options");
     configurator.add_common_options(desc);
     desc.add_options()
+        ("name,N", po::value(&name)->default_value(DEFAULT_NAME), "Name of node")
         ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
         ("debug_file,D", po::value(&debug_file), "Debug file to use instead of COM-device")
         ("debug_run", po::value(&debug_run), "Do a debug run (i.e. run for a short while")
@@ -66,6 +69,7 @@ int main(int argc, char** argv)
 
     BOOST_LOG_TRIVIAL(info) << "Node ID:     " << configurator.node_id;
     BOOST_LOG_TRIVIAL(info) << "Device: " << device;
+    BOOST_LOG_TRIVIAL(info) << "Name: " << name;
 
     i3ds::Context::Ptr context = i3ds::Context::Create();
     i3ds::Server server(context);
@@ -76,6 +80,7 @@ int main(int argc, char** argv)
     } else {
         imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
     }
+    imu->set_name(name);
 
     imu->Attach(server);
 
