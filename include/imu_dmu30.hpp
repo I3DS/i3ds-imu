@@ -41,15 +41,7 @@ class ImuDmu30 : public IMU
           latest_temp_(0.0)
     {};
 
-    ~ImuDmu30(){
-      stop();
-    }
-
-    double temperature() { return latest_temp_; };
-
-    // Supported period, needs to be connected to batch_size. Sample
-    // period is fixed for the IMU (at 200Hz)
-    virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
+    virtual ~ImuDmu30() { stop(); };
 
     bool read(const std::shared_ptr<Message_Type> data);
     void run();
@@ -69,6 +61,13 @@ class ImuDmu30 : public IMU
     }
 
     virtual void debug();
+
+
+    double temperature() { return latest_temp_; };
+
+    // Supported period, needs to be connected to batch_size. Sample
+    // period is fixed for the IMU (at 200Hz)
+    virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
 
 protected:
 
