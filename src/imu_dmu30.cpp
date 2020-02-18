@@ -163,7 +163,7 @@ bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
     data->axis_z_rate = frame.axis_z_rate;
     data->axis_z_acceleration = frame.axis_z_acceleration;
     data->aux_input_voltage = frame.aux_input_voltage;
-    data->average_temperature = frame.average_temperature;
+    data->average_temperature = frame.average_temperature + 273.15;
     data->axis_x_delta_theta = frame.axis_x_delta_theta;
     data->axis_x_vel = frame.axis_x_vel;
     data->axis_y_delta_theta = frame.axis_y_delta_theta;
@@ -174,6 +174,7 @@ bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
     memcpy(&data->operation_flags, &frame.operation_flags, sizeof(frame.operation_flags));
     memcpy(&data->error_flags, &frame.error_flags, sizeof(frame.error_flags));
 
+    latest_temp_ = data->average_temperature;
     return true;
 }
 

@@ -37,13 +37,18 @@ class ImuDmu30 : public IMU
           device_(device),
           publisher_(context, id),
           batches_(1),
-          msg_idx_(0) {};
+          msg_idx_(0),
+          latest_temp_(0.0)
+    {};
 
     ~ImuDmu30(){
       stop();
     }
 
-    // Supported period.
+    double temperature() { return latest_temp_; };
+
+    // Supported period, needs to be connected to batch_size. Sample
+    // period is fixed for the IMU (at 200Hz)
     virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
 
     bool read(const std::shared_ptr<Message_Type> data);
@@ -100,6 +105,7 @@ private:
     i3ds_asn1::BatchCount batches_;
     i3ds_asn1::IMUMeasurement20 msg_;
     i3ds_asn1::BatchCount msg_idx_;
+    double latest_temp_;
 
     std::thread worker_;
 };
