@@ -24,45 +24,6 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
-i3ds::ImuDmu30 *latest_imu = nullptr;
-
-extern "C" {
-    void i3ds_handle_imu_message(std::shared_ptr<Message_Type> data, i3ds_asn1::Timepoint timestamp_us )
-    {
-        i3ds_asn1::IMUMeasurement20 msg;                                \
-        msg.samples.nCount = 1;                                     \
-        msg.samples.arr[0].axis_x_rate = data->axis_x_rate;         \
-        msg.samples.arr[0].axis_x_acceleration = data->axis_x_acceleration; \
-        msg.samples.arr[0].axis_y_rate = data->axis_y_rate;         \
-        msg.samples.arr[0].axis_y_acceleration = data->axis_y_acceleration; \
-        msg.samples.arr[0].axis_z_rate = data->axis_z_rate;         \
-        msg.samples.arr[0].axis_z_acceleration = data->axis_z_acceleration; \
-        msg.attributes.timestamp = timestamp_us;                    \
-        msg.attributes.validity = i3ds_asn1::sample_valid;          \
-        msg.batch_size = 1;
-        latest_imu->publish_message(msg);
-    }
-
-    void i3ds_send_imu_message(i3ds_asn1::IMUMeasurement20 message) {
-        BOOST_LOG_TRIVIAL(trace) << "Got message from ADA!";
-        if (latest_imu == nullptr){
-            BOOST_LOG_TRIVIAL(error) << "Publisher is null. Not transmitting";
-            return;
-        }
-        latest_imu->publish_message(message);
-    }
-}
-
-i3ds::ImuDmu30::ImuDmu30(Context::Ptr context, i3ds_asn1::NodeID id, std::string device)
-  : IMU(id),
-    device_(device),
-    publisher_(context, id),
-    batches_(1),
-    msg_idx_(0)
-{
-  latest_imu = this;
-}
-
 void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
 {
     if (msg_idx_ == 0) {

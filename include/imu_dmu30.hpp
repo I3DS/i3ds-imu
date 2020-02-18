@@ -32,7 +32,13 @@ class ImuDmu30 : public IMU
       return std::make_shared<ImuDmu30>(context, id, device);
     }
 
-    ImuDmu30(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string device);
+    ImuDmu30(Context::Ptr context, i3ds_asn1::NodeID id, std::string device)
+        : IMU(id),
+          device_(device),
+          publisher_(context, id),
+          batches_(1),
+          msg_idx_(0) {};
+
     ~ImuDmu30(){
       stop();
     }
