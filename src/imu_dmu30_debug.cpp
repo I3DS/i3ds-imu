@@ -42,7 +42,7 @@ bool i3ds::ImuDmu30_Debug::read_single_frame(struct dmu30_frame * frame)
     // Fake slow read, DM30 outputs 200msg/sec
     usleep(5000);
 
-    if (!frame)
+    if (!frame || com_ < 0)
         return false;
 
     int retries = 3;
