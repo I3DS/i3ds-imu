@@ -83,22 +83,12 @@ protected:
     virtual bool read_single_frame(struct dmu30_frame *);
     void send(std::shared_ptr<Message_Type> data);
 
-    // Called periodically to accumulated and send samples.
-    bool send_sample(unsigned long timestamp_us);
-
-    // Generat a single ADC reading with specified resolution.
-    std::vector<float> read_imu();
-
-
     std::string device_;
     int com_;
 
 private:
     Publisher publisher_;
-
-    // MeasurementTopic::Data frame_;
-
-      std::atomic<bool> running_;
+    std::atomic<bool> running_;
 
     // Number of batches inserted.
     i3ds_asn1::BatchCount batches_;
@@ -111,21 +101,23 @@ private:
 
 class ImuDmu30_Debug : public ImuDmu30
 {
-    public:
-        static Ptr Create(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string debug_file)
-        {
-            return std::make_shared<ImuDmu30_Debug>(context, id, debug_file);
-        }
+public:
+    static Ptr Create(i3ds::Context::Ptr context, i3ds_asn1::NodeID id, std::string debug_file)
+    {
+        return std::make_shared<ImuDmu30_Debug>(context, id, debug_file);
+    }
 
-        ImuDmu30_Debug(i3ds::Context::Ptr context,
-                       i3ds_asn1::NodeID id,
-                       std::string device) :
-            i3ds::ImuDmu30(context, id, device)
+    ImuDmu30_Debug(i3ds::Context::Ptr context,
+                   i3ds_asn1::NodeID id,
+                   std::string device) :
+        i3ds::ImuDmu30(context, id, device)
     {};
 
+    virtual void debug();
+
+protected:
     virtual int open_device();
     virtual bool read_single_frame(struct dmu30_frame *);
-    virtual void debug();
 };
 
 } // namespace i3ds

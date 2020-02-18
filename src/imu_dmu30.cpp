@@ -72,37 +72,7 @@ bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
     return true;
 }
 
-void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
-{
-    if (msg_idx_ == 0) {
-        msg_.batch_size = 0;
-        msg_.samples.nCount = 0;
-        msg_.attributes.validity = i3ds_asn1::sample_invalid;
-        msg_.attributes.timestamp = get_timestamp();
-    }
-    // store samples until batches_ or 20
-    // samples.arr[20]
-    if (msg_idx_ < batches_) {
-        msg_.samples.arr[msg_idx_].axis_x_rate = data->axis_x_rate;
-        msg_.samples.arr[msg_idx_].axis_x_acceleration = data->axis_x_acceleration;
-        msg_.samples.arr[msg_idx_].axis_y_rate = data->axis_y_rate;
-        msg_.samples.arr[msg_idx_].axis_y_acceleration = data->axis_y_acceleration;
-        msg_.samples.arr[msg_idx_].axis_z_rate = data->axis_z_rate;
-        msg_.samples.arr[msg_idx_].axis_z_acceleration = data->axis_z_acceleration;
-        msg_idx_++;
-        msg_.samples.nCount = msg_idx_;
-    }
-    if (msg_idx_ == batches_) {
-        msg_.attributes.validity = i3ds_asn1::sample_valid;
-        // we don't care about msg_.attributes.arr
-        msg_.batch_size = batches_;
-        publish_message(msg_);
-        msg_idx_ = 0;
-    }
-}
-
-void
-i3ds::ImuDmu30::run()
+void i3ds::ImuDmu30::run()
 {
     // FIXME: this should probably be make_unique
     auto data = std::make_shared<Message_Type>();
@@ -111,12 +81,25 @@ i3ds::ImuDmu30::run()
             BOOST_LOG_TRIVIAL(warning) << "Could not read frame.";
         } else {
             send(data);
-            //i3ds_handle_imu_message(data, get_timestamp());
         }
     }
 }
 
-bool ensure_read(int device, void *buf, size_t n_bytes) {
+void i3ds::ImuDmu30::debug()
+{
+    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
+}
+
+bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample) {
+    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() sample.batch_size " << sample.batch_size;
+    return sample.batch_size > 0 && sample.batch_size < 21;
+}
+
+
+// --------------------------------------------------
+// protected region
+
+static bool ensure_read(int device, void *buf, size_t n_bytes) {
   size_t ix=0;
   do {
     int n = read(device, (char *)buf + ix, n_bytes - ix);
@@ -138,45 +121,26 @@ bool ensure_read(int device, void *buf, size_t n_bytes) {
   return true;
 }
 
-void i3ds::ImuDmu30::debug()
-{
-    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
+void i3ds::ImuDmu30::do_activate() {
+    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
+    com_ = open_device();
 }
 
-bool i3ds::ImuDmu30::read_single_frame(struct dmu30_frame * frame)
-{
-    // FIXME: this blocks on incoming data.  Either blocks on device, or
-    // blocks on semaphore/conditional (debug-file) to get new data
-
-  uint8_t *buf = (uint8_t *)frame;
-  unsigned int skipped = 0;
-
-  if (!ensure_read(com_, buf, 2)) {
-    return false;
-  }
-
-  while (frame->sync_bytes != SYNC_BYTE) {
-    buf[0] = buf[1];
-    if (!ensure_read(com_, buf+1, 1)) {
-      return false;
-    }
-    skipped++;
-  }
-
-  if (skipped > 0) {
-    BOOST_LOG_TRIVIAL(warning) << "Skipped " << skipped << " bytes to sync.";
-  }
-
-  if (!ensure_read(com_, buf + 2, sizeof(*frame)-2)) {
-    return false;
-  }
-
-  return true;
+void i3ds::ImuDmu30::do_start() {
+    running_ = true;
+    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
+    worker_ = std::thread(&i3ds::ImuDmu30::run, this);
 }
 
-bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample) {
-    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() sample.batch_size " << sample.batch_size;
-    return sample.batch_size > 0 && sample.batch_size < 21;
+void i3ds::ImuDmu30::do_stop() {
+    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
+    stop();
+}
+
+void i3ds::ImuDmu30::do_deactivate() {
+    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
+    close_device(com_);
+    com_ = -1;
 }
 
 int i3ds::ImuDmu30::open_device()
@@ -229,24 +193,62 @@ void i3ds::ImuDmu30::close_device(int device)
         close(device);
 }
 
-void i3ds::ImuDmu30::do_activate() {
-    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
-    com_ = open_device();
+bool i3ds::ImuDmu30::read_single_frame(struct dmu30_frame * frame)
+{
+    // FIXME: this blocks on incoming data.  Either blocks on device, or
+    // blocks on semaphore/conditional (debug-file) to get new data
+
+  uint8_t *buf = (uint8_t *)frame;
+  unsigned int skipped = 0;
+
+  if (!ensure_read(com_, buf, 2)) {
+    return false;
+  }
+
+  while (frame->sync_bytes != SYNC_BYTE) {
+    buf[0] = buf[1];
+    if (!ensure_read(com_, buf+1, 1)) {
+      return false;
+    }
+    skipped++;
+  }
+
+  if (skipped > 0) {
+    BOOST_LOG_TRIVIAL(warning) << "Skipped " << skipped << " bytes to sync.";
+  }
+
+  if (!ensure_read(com_, buf + 2, sizeof(*frame)-2)) {
+    return false;
+  }
+
+  return true;
 }
 
-void i3ds::ImuDmu30::do_start() {
-    running_ = true;
-    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
-    worker_ = std::thread(&i3ds::ImuDmu30::run, this);
-}
-
-void i3ds::ImuDmu30::do_stop() {
-    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
-    stop();
-}
-
-void i3ds::ImuDmu30::do_deactivate() {
-    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
-    close_device(com_);
-    com_ = -1;
+void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
+{
+    if (msg_idx_ == 0) {
+        msg_.batch_size = 0;
+        msg_.samples.nCount = 0;
+        msg_.attributes.validity = i3ds_asn1::sample_invalid;
+        msg_.attributes.timestamp = get_timestamp();
+    }
+    // store samples until batches_ or 20
+    // samples.arr[20]
+    if (msg_idx_ < batches_) {
+        msg_.samples.arr[msg_idx_].axis_x_rate = data->axis_x_rate;
+        msg_.samples.arr[msg_idx_].axis_x_acceleration = data->axis_x_acceleration;
+        msg_.samples.arr[msg_idx_].axis_y_rate = data->axis_y_rate;
+        msg_.samples.arr[msg_idx_].axis_y_acceleration = data->axis_y_acceleration;
+        msg_.samples.arr[msg_idx_].axis_z_rate = data->axis_z_rate;
+        msg_.samples.arr[msg_idx_].axis_z_acceleration = data->axis_z_acceleration;
+        msg_idx_++;
+        msg_.samples.nCount = msg_idx_;
+    }
+    if (msg_idx_ == batches_) {
+        msg_.attributes.validity = i3ds_asn1::sample_valid;
+        // we don't care about msg_.attributes.arr
+        msg_.batch_size = batches_;
+        publish_message(msg_);
+        msg_idx_ = 0;
+    }
 }
