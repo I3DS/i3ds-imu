@@ -15,7 +15,15 @@
 
 #define store_float_be(X) htobe32(*(uint32_t *)&(X))
 
-static inline float float_be(float t) { return store_float_be(t); }
+union wrapper {
+    float f;
+    uint32_t raw;
+};
+static inline float float_be(volatile float t) {
+    union wrapper w = { .f = t };
+    w.raw = htobe32(w.raw);
+    return w.f;
+}
 
 struct dmu30_frame {
     uint16_t sync_bytes;
