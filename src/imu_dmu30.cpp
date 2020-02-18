@@ -24,6 +24,54 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
+
+bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
+{
+    struct dmu30_frame frame;
+
+    if (!read_single_frame(&frame))
+        return false;
+
+    if (!verify_checksum(&frame)) {
+        BOOST_LOG_TRIVIAL(warning) << "Checksum error!";
+        return false;
+    }
+
+    frame.sync_bytes = be16toh(frame.sync_bytes);
+    frame.message_count = be16toh(frame.message_count);
+    uint32_t *ubuf32 = (uint32_t *)&frame;
+    size_t n_ints = sizeof(struct dmu30_frame)/4;
+    for(size_t i = 1; i < (n_ints-2); i++)
+        ubuf32[i] = swap_bytes_32(ubuf32[i]);
+    frame.startup_flags = be16toh(frame.startup_flags);
+    frame.operation_flags = be16toh(frame.operation_flags);
+    frame.error_flags = be16toh(frame.error_flags);
+    frame.checksum = be16toh(frame.checksum);
+
+    // Swapping done
+    data->message_count = frame.message_count;
+    data->axis_x_rate = frame.axis_x_rate;
+    data->axis_x_acceleration = frame.axis_x_acceleration;
+    data->axis_y_rate = frame.axis_y_rate;
+    data->axis_y_acceleration = frame.axis_y_acceleration;
+    data->axis_z_rate = frame.axis_z_rate;
+    data->axis_z_acceleration = frame.axis_z_acceleration;
+    data->aux_input_voltage = frame.aux_input_voltage;
+    data->average_temperature = frame.average_temperature + 273.15;
+    data->axis_x_delta_theta = frame.axis_x_delta_theta;
+    data->axis_x_vel = frame.axis_x_vel;
+    data->axis_y_delta_theta = frame.axis_y_delta_theta;
+    data->axis_y_vel = frame.axis_y_vel;
+    data->axis_z_delta_theta = frame.axis_z_delta_theta;
+    data->axis_z_vel = frame.axis_z_vel;
+    memcpy(&data->startup_flags, &frame.startup_flags, sizeof(frame.startup_flags));
+    memcpy(&data->operation_flags, &frame.operation_flags, sizeof(frame.operation_flags));
+    memcpy(&data->error_flags, &frame.error_flags, sizeof(frame.error_flags));
+
+    latest_temp_ = data->average_temperature;
+    return true;
+}
+
 void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
 {
     if (msg_idx_ == 0) {
@@ -126,61 +174,9 @@ bool i3ds::ImuDmu30::read_single_frame(struct dmu30_frame * frame)
   return true;
 }
 
-bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
-{
-    struct dmu30_frame frame;
-
-    if (!read_single_frame(&frame))
-        return false;
-
-    if (!verify_checksum(&frame)) {
-        BOOST_LOG_TRIVIAL(warning) << "Checksum error!";
-        return false;
-    }
-
-    uint16_t *u16buf = (uint16_t *)&frame;
-    size_t n_shorts = sizeof(struct dmu30_frame)/2;
-    uint32_t *ubuf32 = (uint32_t *)&frame;
-    size_t n_ints = sizeof(struct dmu30_frame)/4;
-
-    for(size_t i=1; i<n_ints - 2; i++) {
-        ubuf32[i] = swap_bytes_32(ubuf32[i]);
-    }
-
-    for(size_t i=0; i<2; i++) {
-        u16buf[i] = swap_bytes_16(u16buf[i]);
-    }
-    for(size_t i=n_shorts - 4; i<n_shorts; i++) {
-        u16buf[i] = swap_bytes_16(u16buf[i]);
-    }
-    // Swapping done
-
-    data->message_count = frame.message_count;
-    data->axis_x_rate = frame.axis_x_rate;
-    data->axis_x_acceleration = frame.axis_x_acceleration;
-    data->axis_y_rate = frame.axis_y_rate;
-    data->axis_y_acceleration = frame.axis_y_acceleration;
-    data->axis_z_rate = frame.axis_z_rate;
-    data->axis_z_acceleration = frame.axis_z_acceleration;
-    data->aux_input_voltage = frame.aux_input_voltage;
-    data->average_temperature = frame.average_temperature + 273.15;
-    data->axis_x_delta_theta = frame.axis_x_delta_theta;
-    data->axis_x_vel = frame.axis_x_vel;
-    data->axis_y_delta_theta = frame.axis_y_delta_theta;
-    data->axis_y_vel = frame.axis_y_vel;
-    data->axis_z_delta_theta = frame.axis_z_delta_theta;
-    data->axis_z_vel = frame.axis_z_vel;
-    memcpy(&data->startup_flags, &frame.startup_flags, sizeof(frame.startup_flags));
-    memcpy(&data->operation_flags, &frame.operation_flags, sizeof(frame.operation_flags));
-    memcpy(&data->error_flags, &frame.error_flags, sizeof(frame.error_flags));
-
-    latest_temp_ = data->average_temperature;
-    return true;
-}
-
-bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand) {
-  // TODO(sigurdal) implement?
-  return true;
+bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample) {
+    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() sample.batch_size " << sample.batch_size;
+    return sample.batch_size > 0 && sample.batch_size < 21;
 }
 
 int i3ds::ImuDmu30::open_device()
