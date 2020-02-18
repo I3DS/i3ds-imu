@@ -57,7 +57,7 @@ i3ds::ImuDmu30::ImuDmu30(Context::Ptr context, i3ds_asn1::NodeID id, std::string
   : IMU(id),
     device_(device),
     publisher_(context, id),
-    batches_(20),
+    batches_(1),
     msg_idx_(0)
 {
   latest_imu = this;
@@ -129,9 +129,6 @@ bool ensure_read(int device, void *buf, size_t n_bytes) {
   return true;
 }
 
-// TODO(sigurdal) Check endianness of system and redefine this?
-#define swap_bytes_16(X) __bswap_16(X)
-#define swap_bytes_32(X) __bswap_32(X)
 void i3ds::ImuDmu30::debug()
 {
     BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
@@ -172,27 +169,19 @@ bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
 {
     struct dmu30_frame frame;
 
-    // BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
-
     if (!read_single_frame(&frame))
         return false;
 
-    uint16_t *u16buf = (uint16_t *)&frame;
-    size_t n_shorts = sizeof(struct dmu30_frame)/2;
-
-    // Checksum is OK if the sum of all 16-bit values is 0
-    uint16_t checksum = 0;
-    for (size_t i=0; i<n_shorts; i++) {
-        checksum += swap_bytes_16(u16buf[i]);
-    }
-
-    if (checksum != 0) {
+    if (!verify_checksum(&frame)) {
         BOOST_LOG_TRIVIAL(warning) << "Checksum error!";
         return false;
     }
 
+    uint16_t *u16buf = (uint16_t *)&frame;
+    size_t n_shorts = sizeof(struct dmu30_frame)/2;
     uint32_t *ubuf32 = (uint32_t *)&frame;
     size_t n_ints = sizeof(struct dmu30_frame)/4;
+
     for(size_t i=1; i<n_ints - 2; i++) {
         ubuf32[i] = swap_bytes_32(ubuf32[i]);
     }

@@ -23,7 +23,27 @@ int i3ds::ImuDmu30_Debug::open_device()
 // Do same as in imu_dmu30.cpp, i3ds::ImuDmu::read() crashes with
 // os read, so drop out of namespace to avoid name collision
 static ssize_t ensure_read(int fd, void *buf, size_t n_bytes) {
-    return read(fd, buf, n_bytes);
+    uint16_t *hdr = (uint16_t *)buf;
+    uint8_t *ptr = (uint8_t *)buf;
+    ssize_t rb = 0;
+
+    do {
+        rb = read(fd, ptr, 2);
+        if (rb == 0)        // EOF
+            return 0;
+
+        if (rb < 0)
+            return -1;
+
+        if (rb != 2) {
+            BOOST_LOG_TRIVIAL(error) << "i3ds::ImuDmu30_Debug::" << __func__ \
+                                     << "() FAILED reading 2 bytes from file! " << rb;
+
+            return -1;
+        }
+    } while (*hdr != SYNC_BYTE);
+    rb += read(fd, ptr+2, n_bytes-2);
+    return rb;
 }
 
 bool i3ds::ImuDmu30_Debug::read_single_frame(struct dmu30_frame * frame)
@@ -31,7 +51,7 @@ bool i3ds::ImuDmu30_Debug::read_single_frame(struct dmu30_frame * frame)
     // Fake slow read, DM30 outputs 200msg/sec
     usleep(5000);
 
-    if (!frame)
+    if (!frame || com_ < 0)
         return false;
 
     int retries = 3;
