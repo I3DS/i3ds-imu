@@ -39,11 +39,11 @@ std::atomic<bool> running(false);
 
 i3ds::ImuDmu30::Ptr imu;
 
-void signal_handler(int)
+void signal_handler(int signal)
 {
-  BOOST_LOG_TRIVIAL(info) << "do_deactivate()";
-  imu->stop();
-  running = false;
+    BOOST_LOG_TRIVIAL(info) << "() caught signal " << signal << ", stopping.";
+    imu->stop();
+    running = false;
 }
 
 #define DEFAULT_DEVICE "/dev/ttyUSB0"
@@ -89,7 +89,6 @@ int main(int argc, char** argv)
 
     server.Start();
 
-    // FIXME: Drop debug-stuff
     if (debug_run > 0) {
         BOOST_LOG_TRIVIAL(debug) << __func__ << "() Setup done, closing down momentarily";
         imu->debug();
