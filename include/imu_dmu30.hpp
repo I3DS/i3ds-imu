@@ -80,6 +80,7 @@ protected:
     // IMU specific operations
     virtual int open_device();
     void close_device(int device);
+    virtual bool ensure_read(void *buf, size_t n_bytes);
     virtual bool read_single_frame(struct dmu30_frame *);
     void send(std::shared_ptr<Message_Type> data);
 
@@ -117,6 +118,7 @@ public:
 
 protected:
     virtual int open_device();
+    virtual bool ensure_read(void *buf, size_t n_bytes);
     virtual bool read_single_frame(struct dmu30_frame *);
 };
 

@@ -99,7 +99,7 @@ bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample) {
 // --------------------------------------------------
 // protected region
 
-static bool ensure_read(int device, void *buf, size_t n_bytes) {
+static bool do_read(int device, void *buf, size_t n_bytes) {
   size_t ix=0;
   do {
     int n = read(device, (char *)buf + ix, n_bytes - ix);
@@ -119,6 +119,10 @@ static bool ensure_read(int device, void *buf, size_t n_bytes) {
   } while (ix < n_bytes);
 
   return true;
+}
+bool i3ds::ImuDmu30::ensure_read(void *buf, size_t n_bytes)
+{
+    return do_read(com_, buf, n_bytes);
 }
 
 void i3ds::ImuDmu30::do_activate() {
@@ -198,26 +202,29 @@ bool i3ds::ImuDmu30::read_single_frame(struct dmu30_frame * frame)
     // FIXME: this blocks on incoming data.  Either blocks on device, or
     // blocks on semaphore/conditional (debug-file) to get new data
 
+    if (!frame)
+        return false;
+
   uint8_t *buf = (uint8_t *)frame;
   unsigned int skipped = 0;
 
-  if (!ensure_read(com_, buf, 2)) {
+  if (!ensure_read(buf, 2)) {
     return false;
   }
 
   while (frame->sync_bytes != SYNC_BYTE) {
     buf[0] = buf[1];
-    if (!ensure_read(com_, buf+1, 1)) {
+    if (!ensure_read(buf+1, 1)) {
       return false;
     }
     skipped++;
   }
 
   if (skipped > 0) {
-    BOOST_LOG_TRIVIAL(warning) << "Skipped " << skipped << " bytes to sync.";
+      BOOST_LOG_TRIVIAL(warning) << "Skipped " << skipped << " bytes to sync.";
   }
 
-  if (!ensure_read(com_, buf + 2, sizeof(*frame)-2)) {
+  if (!ensure_read(buf + 2, sizeof(*frame)-2)) {
     return false;
   }
 
