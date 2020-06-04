@@ -18,6 +18,9 @@
 #include "i3ds/DMU30.h"
 
 #include "imu_helper.hpp"
+#define IMU_DMU30_BASE_PERIOD_US 5000
+#define IMU_DMU30_MAX_BATCH 20
+
 namespace i3ds
 {
 
@@ -36,6 +39,7 @@ class ImuDmu30 : public IMU
         : IMU(id),
           device_(device),
           publisher_(context, id),
+          period_(IMU_DMU30_BASE_PERIOD_US),
           batches_(1),
           msg_idx_(0),
           latest_temp_(0.0)
@@ -68,6 +72,8 @@ class ImuDmu30 : public IMU
     // Supported period, needs to be connected to batch_size. Sample
     // period is fixed for the IMU (at 200Hz)
     virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
+
+    // Allow to set batch_size at startup
     virtual void set_batch_size(int batch_size);
 
 protected:
@@ -93,6 +99,7 @@ private:
     std::atomic<bool> running_;
 
     // Number of batches inserted.
+    i3ds_asn1::SamplePeriod period_;
     i3ds_asn1::BatchCount batches_;
     i3ds_asn1::IMUMeasurement20 msg_;
     i3ds_asn1::BatchCount msg_idx_;

@@ -87,7 +87,7 @@ void i3ds::ImuDmu30::run()
 
 void i3ds::ImuDmu30::set_batch_size(int batch_size)
 {
-    if (batch_size < 1 || batch_size > 20)
+    if (batch_size < 1 || batch_size > IMU_DMU30_MAX_BATCH)
         throw std::invalid_argument("batch_size out of range ([1..20])");
     batches_ = batch_size;
 }
@@ -97,11 +97,32 @@ void i3ds::ImuDmu30::debug()
     BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";
 }
 
-bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample) {
-    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() sample.batch_size " << sample.batch_size;
-    return sample.batch_size > 0 && sample.batch_size < 21;
-}
+bool i3ds::ImuDmu30::is_sampling_supported(i3ds_asn1::SampleCommand sample)
+{
+    // period for IMU is 200Hz, i.e. 5000us, we batch together samples
+    // in increments of 5ms periods
+    if (sample.batch_size > 1) {
+        BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "() attempting to set batch-size directly";
+        if (sample.batch_size > IMU_DMU30_MAX_BATCH) {
+            BOOST_LOG_TRIVIAL(error) << "i3ds::ImuD mu30::" << __func__ << "() invalid batch size ([1..20])";
+            return false;
+        }
+        batches_ = sample.batch_size;
+        period_ = IMU_DMU30_BASE_PERIOD_US * batches_;
+    } else if (sample.period % IMU_DMU30_BASE_PERIOD_US != 0 ||
+               sample.period > IMU_DMU30_BASE_PERIOD_US * IMU_DMU30_MAX_BATCH) {
+        BOOST_LOG_TRIVIAL(error)  << "i3ds::ImuDmu30::" << __func__ << "() Invalid period (must be multiple of " << IMU_DMU30_BASE_PERIOD_US << ")";
+        return false;
+    } else {
+        period_ = sample.period;
+        batches_ = period_ / IMU_DMU30_BASE_PERIOD_US;
+    }
 
+    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() period: " << period_;
+    BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "() batch_size: " << batches_;
+
+    return true;
+}
 
 // --------------------------------------------------
 // protected region
