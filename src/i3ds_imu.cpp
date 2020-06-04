@@ -72,6 +72,7 @@ int main(int argc, char** argv)
     BOOST_LOG_TRIVIAL(info) << "Node ID:     " << configurator.node_id;
     BOOST_LOG_TRIVIAL(info) << "Device: " << device;
     BOOST_LOG_TRIVIAL(info) << "Name: " << name;
+    BOOST_LOG_TRIVIAL(info) << "Batch size: " << batch_size;
 
     i3ds::Context::Ptr context = i3ds::Context::Create();
     i3ds::Server server(context);
@@ -92,7 +93,7 @@ int main(int argc, char** argv)
     server.Start();
 
     if (debug_run > 0) {
-        BOOST_LOG_TRIVIAL(debug) << __func__ << "() Setup done, closing down momentarily";
+        BOOST_LOG_TRIVIAL(debug) << __func__ << "() Setup done, closing down in " << debug_run << " secs.";
         imu->debug();
         sleep(debug_run);
     } else {
