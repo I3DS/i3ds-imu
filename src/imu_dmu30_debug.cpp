@@ -61,7 +61,32 @@ bool i3ds::ImuDmu30_Debug::read_single_frame(struct dmu30_frame * frame)
 
 void i3ds::ImuDmu30_Debug::debug()
 {
-    BOOST_LOG_TRIVIAL(debug) << "i3ds::ImuDmu30::" << __func__ << "()";
     do_activate();
+    i3ds_asn1::SampleCommand sample;
+    sample.period      = 5000;
+    sample.batch_size  = 1;
+    sample.batch_count = 0;
+
+    // These things should be in a unit-test, but for now, do unit-tests here.
+    sample.period  = 105000;
+    if (is_sampling_supported(sample))
+        throw std::runtime_error("bogus period not grabbed");
+
+    sample.period = 100000;
+    sample.batch_size = -1;
+    if (is_sampling_supported(sample))
+        throw std::runtime_error("bogus batch_period");
+    sample.batch_size = 21;
+    if (is_sampling_supported(sample))
+        throw std::runtime_error("bogus batch_period");
+
+    // Ok, start test-run
+    sample.period      = 5000;
+    sample.batch_size  = 1;
+    sample.batch_count = 0;
+    if (!is_sampling_supported(sample)) {
+        do_deactivate();
+        return;
+    }
     do_start();
 }
