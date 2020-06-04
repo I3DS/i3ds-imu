@@ -54,6 +54,7 @@ int main(int argc, char** argv)
     std::string device;
     std::string name;
     std::string debug_file;
+    int batch_size = 1;
     int debug_run = 0;
 
     i3ds::SensorConfigurator configurator;
@@ -61,6 +62,7 @@ int main(int argc, char** argv)
     configurator.add_common_options(desc);
     desc.add_options()
         ("name,N", po::value(&name)->default_value(DEFAULT_NAME), "Name of node")
+        ("batch_size", po::value(&batch_size)->default_value(1), "Batch size (number of samples to group toghether in a single message)")
         ("device,d", po::value(&device)->default_value(DEFAULT_DEVICE), "Path to COM-device")
         ("debug_file,D", po::value(&debug_file), "Debug file to use instead of COM-device")
         ("debug_run", po::value(&debug_run), "Do a debug run (i.e. run for a short while")
@@ -81,7 +83,7 @@ int main(int argc, char** argv)
         imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
     }
     imu->set_name(name);
-
+    imu->set_batch_size(batch_size);
     imu->Attach(server);
 
     running = true;

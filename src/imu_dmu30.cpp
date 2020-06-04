@@ -85,6 +85,13 @@ void i3ds::ImuDmu30::run()
     }
 }
 
+void i3ds::ImuDmu30::set_batch_size(int batch_size)
+{
+    if (batch_size < 1 || batch_size > 20)
+        throw std::invalid_argument("batch_size out of range ([1..20])");
+    batches_ = batch_size;
+}
+
 void i3ds::ImuDmu30::debug()
 {
     BOOST_LOG_TRIVIAL(info) << "i3ds::ImuDmu30::" << __func__ << "()";

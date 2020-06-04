@@ -68,6 +68,7 @@ class ImuDmu30 : public IMU
     // Supported period, needs to be connected to batch_size. Sample
     // period is fixed for the IMU (at 200Hz)
     virtual bool is_sampling_supported(i3ds_asn1::SampleCommand sample);
+    virtual void set_batch_size(int batch_size);
 
 protected:
 
