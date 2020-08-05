@@ -24,6 +24,22 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
+#include <sys/stat.h>
+bool i3ds::ImuDmu30::valid_device()
+{
+    struct stat s;
+    if (stat(device_.c_str(), &s) == -1) {
+        BOOST_LOG_TRIVIAL(error) << "i3ds::ImuDmu30::" << __func__ << "() Provided device (" << device_ << ") not found";
+        return false;
+    }
+
+    // Should have a valid device-ID, and size should be 0 (character device)
+    if (s.st_rdev == 0 || s.st_size != 0) {
+        BOOST_LOG_TRIVIAL(error) << "i3ds::ImuDmu30::" << __func__ << "() Invalid device (" << device_ << ")";
+        return false;
+    }
+    return true;
+}
 
 bool i3ds::ImuDmu30::read(const std::shared_ptr<Message_Type> data)
 {

@@ -46,6 +46,7 @@ class ImuDmu30 : public IMU
     {};
 
     virtual ~ImuDmu30() { stop(); };
+    virtual bool valid_device();
 
     bool read(const std::shared_ptr<Message_Type> data);
     void run();
@@ -121,7 +122,7 @@ public:
                    std::string device) :
         i3ds::ImuDmu30(context, id, device)
     {};
-
+    virtual bool valid_device();
     virtual void debug();
 
 protected:

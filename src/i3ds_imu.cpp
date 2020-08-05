@@ -83,6 +83,14 @@ int main(int argc, char** argv)
     } else {
         imu = i3ds::ImuDmu30::Create(context, configurator.node_id, device);
     }
+
+    if (!imu->valid_device()) {
+        BOOST_LOG_TRIVIAL(error) << "Invalid IMU device, cannot operate IMU. Aborting.";
+        return -1;
+    }
+
+
+
     imu->set_name(name);
     imu->set_batch_size(batch_size);
     imu->Attach(server);

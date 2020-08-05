@@ -9,6 +9,24 @@
 
 #include <i3ds/DMU30.h>
 
+#include <sys/stat.h>
+bool i3ds::ImuDmu30_Debug::valid_device()
+{
+    struct stat s;
+    if (stat(device_.c_str(), &s) == -1) {
+        BOOST_LOG_TRIVIAL(error) << "i3ds::ImuDmu30_Debug::" << __func__ << "() Provided device (" << device_ << ") not found";
+        return false;
+    }
+
+    // Debug-file with data should be non-zero, and not have a device id
+    // (should be a file)
+    if (s.st_size == 0 || s.st_rdev != 0) {
+        BOOST_LOG_TRIVIAL(error) << "i3ds::ImuDmu30_Debug::" << __func__ << "() Invalid device for debugging (" << device_ << ")";
+        return false;
+    }
+    return true;
+}
+
 int i3ds::ImuDmu30_Debug::open_device()
 {
     int fd = open(device_.c_str(), O_RDONLY);
