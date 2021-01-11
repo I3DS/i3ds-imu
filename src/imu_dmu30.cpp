@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <byteswap.h>
+#include <math.h>
 
 #include <fcntl.h>      // File control definitions
 #include <termios.h>
@@ -277,6 +278,9 @@ bool i3ds::ImuDmu30::read_single_frame(struct dmu30_frame * frame)
 
 void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
 {
+    const double g2ms2 = 9.81;
+    const double d2rad = M_PI / 180.0;
+
     if (msg_idx_ == 0) {
         msg_.batch_size = 0;
         msg_.samples.nCount = 0;
@@ -286,12 +290,12 @@ void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
     // store samples until batches_ or 20
     // samples.arr[20]
     if (msg_idx_ < batches_) {
-        msg_.samples.arr[msg_idx_].axis_x_rate = data->axis_x_rate;
-        msg_.samples.arr[msg_idx_].axis_x_acceleration = data->axis_x_acceleration;
-        msg_.samples.arr[msg_idx_].axis_y_rate = data->axis_y_rate;
-        msg_.samples.arr[msg_idx_].axis_y_acceleration = data->axis_y_acceleration;
-        msg_.samples.arr[msg_idx_].axis_z_rate = data->axis_z_rate;
-        msg_.samples.arr[msg_idx_].axis_z_acceleration = data->axis_z_acceleration;
+        msg_.samples.arr[msg_idx_].axis_x_rate         = d2rad * data->axis_x_rate;
+        msg_.samples.arr[msg_idx_].axis_x_acceleration = g2ms2 * data->axis_x_acceleration;
+        msg_.samples.arr[msg_idx_].axis_y_rate         = d2rad * data->axis_y_rate;
+        msg_.samples.arr[msg_idx_].axis_y_acceleration = g2ms2 * data->axis_y_acceleration;
+        msg_.samples.arr[msg_idx_].axis_z_rate         = d2rad * data->axis_z_rate;
+        msg_.samples.arr[msg_idx_].axis_z_acceleration = g2ms2 * data->axis_z_acceleration;
         msg_idx_++;
         msg_.samples.nCount = msg_idx_;
     }
