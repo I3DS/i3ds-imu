@@ -201,7 +201,7 @@ int i3ds::ImuDmu30::open_device()
   if ( com < 0 )
   {
     BOOST_LOG_TRIVIAL(error) << "Error " << errno << " opening " << "/dev/ttyUSB0" << ": " << strerror (errno);
-    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not open device.");
+    throw i3ds::CommandError(i3ds_asn1::ResultCode_error_value, "Could not open device.");
   }
 
   struct termios tty;
@@ -209,7 +209,7 @@ int i3ds::ImuDmu30::open_device()
   if ( tcgetattr ( com, &tty ) != 0 )
   {
     BOOST_LOG_TRIVIAL(error) <<  "Error " << errno << " from tcgetattr: " << strerror(errno);
-    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not open tty.");
+    throw i3ds::CommandError(i3ds_asn1::ResultCode_error_value, "Could not open tty.");
   }
   
   cfsetospeed(&tty, B460800);
@@ -229,7 +229,7 @@ int i3ds::ImuDmu30::open_device()
   tcflush(com, TCIFLUSH);
   if ( tcsetattr ( com, TCSANOW, &tty ) != 0) {
     BOOST_LOG_TRIVIAL(error) << "Error " << errno << " from tcsetattr";
-    throw i3ds::CommandError(i3ds_asn1::error_value, "Could not set tty parameters.");
+    throw i3ds::CommandError(i3ds_asn1::ResultCode_error_value, "Could not set tty parameters.");
   }
 
   return com;
@@ -284,7 +284,7 @@ void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
     if (msg_idx_ == 0) {
         msg_.batch_size = 0;
         msg_.samples.nCount = 0;
-        msg_.attributes.validity = i3ds_asn1::sample_invalid;
+        msg_.attributes.validity = i3ds_asn1::SampleValidity_sample_invalid;
         msg_.attributes.timestamp = get_timestamp();
     }
     // store samples until batches_ or 20
@@ -300,7 +300,7 @@ void i3ds::ImuDmu30::send(std::shared_ptr<Message_Type> data)
         msg_.samples.nCount = msg_idx_;
     }
     if (msg_idx_ == batches_) {
-        msg_.attributes.validity = i3ds_asn1::sample_valid;
+        msg_.attributes.validity = i3ds_asn1::SampleValidity_sample_valid;
         // we don't care about msg_.attributes.arr
         msg_.batch_size = batches_;
         publish_message(msg_);
