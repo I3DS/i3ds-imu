@@ -1,7 +1,9 @@
 #include "imu_dmu30.hpp"
 #include <fcntl.h>      // File control definitions
 
+#ifndef BOOST_LOG_DYN_LINK
 #define BOOST_LOG_DYN_LINK
+#endif
 #include <boost/format.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>

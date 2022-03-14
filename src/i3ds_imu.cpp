@@ -21,7 +21,9 @@
 #include "i3ds/communication.hpp"
 #include "imu_dmu30.hpp"
 
+#ifndef BOOST_LOG_DYN_LINK
 #define BOOST_LOG_DYN_LINK
+#endif
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>

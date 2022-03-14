@@ -14,7 +14,7 @@ set (PROJECT_VERSION "1.0")
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/scripts)
 
 option(BUILD_EMBEDDED "Build for embedded systems" OFF)
-option(GENERATE_ASN "Generate new source files from ASN.1 definitions" ON)
+option(GENERATE_ASN "Generate new source files from ASN.1 definitions" OFF)
 option(I3DS_ALT_PATH  "Alternative location for I3DS libraries (framework, asn1)" OFF)
 
 if (BUILD_EMBEDDED)

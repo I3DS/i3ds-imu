@@ -17,7 +17,9 @@
 #include <fcntl.h>      // File control definitions
 #include <termios.h>
 
+#ifndef BOOST_LOG_DYN_LINK
 #define BOOST_LOG_DYN_LINK
+#endif
 
 #include <iostream>
 #include <boost/format.hpp>
