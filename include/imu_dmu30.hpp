@@ -59,6 +59,7 @@ class ImuDmu30 : public IMU
 
     void publish_message(i3ds_asn1::IMUMeasurement20 &message) {
       publisher_.Send<MeasurementTopic>(message);
+      update_and_check_batch_count();
     }
 
     void set_name(std::string name) {
